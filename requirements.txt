@@ -1,0 +1,7 @@
+praw
+python-dotenv
+loguru
+pyspark
+kafka-python
+requests
+findspark

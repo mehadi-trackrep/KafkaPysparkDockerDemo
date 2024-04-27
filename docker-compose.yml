@@ -12,25 +12,28 @@ services:
     image: wurstmeister/kafka
     container_name: ktech_kafka
     ports:
-     - "9092:9092"
+     - "9094:9094"
     platform: linux/arm64
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ADVERTISED_HOST_NAME: "localhost"
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_CREATE_TOPICS: "reddit-submissions:1:1, reddit-subreddit:1:1"
 
       KAFKA_LOG_RETENTION_HOURS: 1
       KAFKA_LOG_RETENTION_BYTES: 4073741824
       KAFKA_LOG_SEGMENT_BYTES: 1073741824
       KAFKA_RETENTION_CHECK_INTERVAL_MS: 300000      
-      KAFKA_SOCKET_REQUEST_MAX_BYTES:	904857600
+      KAFKA_SOCKET_REQUEST_MAX_BYTES:	2147483647
       KAFKA_SOCKET_SEND_BUFFER_BYTES:	902400
       KAFKA_HEAP_OPTS: -Xmx1G -Xms1G
 
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:9094
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9094
       ## OR
       # KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,OUTSIDE://0.0.0.0:9094
       # KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,OUTSIDE://localhost:9094
@@ -40,3 +43,37 @@ services:
     volumes:
      - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
+
+  spark-master:
+    image: docker.io/bitnami/spark:3.5
+    container_name: ktech_spark 
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - SPARK_USER=spark
+    ports:
+      - "8080:8080"  # Spark Web UI
+      - "7077:7077"
+    depends_on:
+      - kafka  # Ensure Kafka is up before starting Spark
+    volumes:
+      - ./:/app/ # Mount your Spark Streaming app
+    restart: unless-stopped
+
+  spark-worker:
+    image: docker.io/bitnami/spark:3.5
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=1
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - SPARK_USER=spark
+    ports:
+      - "8081:8081"

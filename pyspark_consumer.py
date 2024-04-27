@@ -48,6 +48,8 @@ query = df \
   .outputMode("append") \
   .format("console") \
   .start()
+  
+  # .outputMode("complete") \
 
 print(f"\n################################################################\n")
 print(f"\n\n ==> query: {query} \n")

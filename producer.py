@@ -2,7 +2,7 @@ import json
 import time
 import requests
 from kafka import KafkaProducer
-from config import BROKER_EXTERNAL_PORT, TOPIC
+from config import BROKER_EXTERNAL_PORT, KAFKA_TOPIC_NAME
 
 # from confluent_kafka import Producer
 
@@ -35,9 +35,10 @@ def send_to_kafka(topic, data):
 
 def employees_data():
     return {
-            "id": "1",
-            "first_name": "John",
-            "last_name": "Doe"
+            "id": "1"
+            # ,
+            # "first_name": "John",
+            # "last_name": "Doe"
     }
 
 # Main function
@@ -51,7 +52,7 @@ def main():
             print(f"==> data: {json.dumps(data)}")
             if data:
                 # Send data to Kafka
-                send_to_kafka(TOPIC, data)
+                send_to_kafka(KAFKA_TOPIC_NAME, data)
                 print("Data sent to Kafka successfully.")
         except KeyboardInterrupt:
             producer.close()
